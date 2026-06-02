@@ -1,0 +1,146 @@
+{
+  "project": {
+    "name": "trading_journal",
+    "description": "Local-first trading journal for Munch inspired by TradeZella.",
+    "status": "implementation_ready",
+    "source_of_truth": "sqlite"
+  },
+  "authoritative_documents": {
+    "product_requirements": "Loaded and approved",
+    "data_model": "Loaded and approved",
+    "architecture": "Loaded and approved",
+    "roadmap": "Loaded and approved"
+  },
+  "implementation_mode": "v1_lite",
+  "implementation_rules": [
+    "Use existing documentation as authoritative.",
+    "Prefer simplicity over completeness.",
+    "Optimize for first real-world usage.",
+    "Do not implement TradeLocker import.",
+    "Do not implement cloud sync.",
+    "Do not implement AI features.",
+    "Do not implement advanced review workflows.",
+    "Do not implement execution-level trade entry UI.",
+    "Do not implement daily journal.",
+    "All analytics must derive from canonical trade records.",
+    "Preserve user-entered values.",
+    "Use local SQLite as source of truth."
+  ],
+  "tech_stack": {
+    "frontend": "React + Vite",
+    "backend": "Python",
+    "database": "SQLite"
+  },
+  "v1_schema": {
+    "tables": [
+      "accounts",
+      "playbooks",
+      "trades",
+      "tags",
+      "trade_tags",
+      "attachments",
+      "trade_attachments",
+      "psychology_entries",
+      "trade_reviews"
+    ]
+  },
+  "trade_statuses": [
+    "draft",
+    "closed",
+    "reviewed",
+    "archived"
+  ],
+  "pages": [
+    "Dashboard",
+    "Trades",
+    "Trade Detail",
+    "Playbooks",
+    "Settings"
+  ],
+  "trade_entry_fields": [
+    "symbol",
+    "direction",
+    "entry_price",
+    "exit_price",
+    "quantity",
+    "pnl",
+    "risk",
+    "playbook",
+    "tags",
+    "notes"
+  ],
+  "attachments": {
+    "enabled": true,
+    "supported_types": [
+      "before_screenshot",
+      "after_screenshot"
+    ],
+    "storage": "metadata_only"
+  },
+  "analytics": {
+    "dashboard_metrics": [
+      "net_pnl",
+      "win_rate",
+      "profit_factor",
+      "average_r",
+      "total_trades"
+    ],
+    "groupings": [
+      "playbook",
+      "symbol",
+      "direction",
+      "day_of_week"
+    ]
+  },
+  "development_phases": [
+    {
+      "phase": 1,
+      "name": "Foundation",
+      "deliverables": [
+        "Project scaffold",
+        "SQLite initialization",
+        "Backend structure",
+        "Frontend structure",
+        "README"
+      ]
+    },
+    {
+      "phase": 2,
+      "name": "Trade Logging",
+      "deliverables": [
+        "Trade CRUD",
+        "Playbooks",
+        "Tags",
+        "Screenshots"
+      ]
+    },
+    {
+      "phase": 3,
+      "name": "Reviews and Psychology",
+      "deliverables": [
+        "Trade reviews",
+        "Psychology scoring"
+      ]
+    },
+    {
+      "phase": 4,
+      "name": "Analytics",
+      "deliverables": [
+        "Dashboard",
+        "Metrics",
+        "Grouping analytics"
+      ]
+    }
+  ],
+  "codex_task": {
+    "instructions": [
+      "Use the authoritative documentation as the project constitution.",
+      "Build only V1-Lite.",
+      "Favor working software over additional architecture.",
+      "Keep implementation incremental.",
+      "At completion provide files created and architecture summary.",
+      "Do not attempt GitHub push.",
+      "Assume workspace is temporary."
+    ]
+  }
+}
