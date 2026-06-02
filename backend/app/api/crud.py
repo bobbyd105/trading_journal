@@ -3,33 +3,18 @@
 from __future__ import annotations
 
 import sqlite3
-from pathlib import Path
 from typing import Any, Literal
 
 from fastapi import APIRouter, HTTPException, Request, status
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from app.config import DEFAULT_DATABASE_PATH
-from app.db.connection import get_connection
-from app.db.init_db import initialize_database
+from app.db.session import open_database
 
 router = APIRouter()
 
 TradeStatus = Literal["draft", "closed", "reviewed", "archived"]
 Direction = Literal["long", "short"]
 AttachmentType = Literal["before_screenshot", "after_screenshot"]
-
-
-def database_path_from_request(request: Request) -> Path:
-    """Resolve the SQLite database path, allowing tests to override app state."""
-    return Path(getattr(request.app.state, "database_path", DEFAULT_DATABASE_PATH))
-
-
-def open_database(request: Request) -> sqlite3.Connection:
-    """Open an initialized SQLite connection for the current request."""
-    database_path = database_path_from_request(request)
-    initialize_database(database_path)
-    return get_connection(database_path)
 
 
 def row_to_dict(row: sqlite3.Row | None) -> dict[str, Any] | None:
