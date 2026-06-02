@@ -140,7 +140,6 @@ class CrudRoutesTest(unittest.TestCase):
         deleted = self.client.delete(f"/attachments/{attachment_id}")
         self.assertEqual(deleted.status_code, 204)
 
-
     def test_trade_attachment_metadata_endpoint_and_delete_cascade(self):
         trade = self.client.post(
             "/trades",
@@ -211,6 +210,84 @@ class CrudRoutesTest(unittest.TestCase):
 
         hydrated = self.client.get(f"/trades/{trade['id']}").json()
         self.assertEqual(hydrated["before_screenshot"]["file_name"], "replacement.png")
+
+    def test_delete_attachment_removes_app_managed_file(self):
+        trade = self.client.post(
+            "/trades",
+            json={"symbol": "META", "direction": "long"},
+        ).json()
+        uploaded = self.client.put(
+            f"/trades/{trade['id']}/attachments/before_screenshot/file",
+            params={"file_name": "before.png", "content_type": "image/png"},
+            content=b"managed attachment bytes",
+            headers={"Content-Type": "application/octet-stream"},
+        ).json()
+        stored_path = Path(uploaded["file_path"])
+        self.assertTrue(stored_path.exists())
+
+        deleted = self.client.delete(f"/attachments/{uploaded['id']}")
+        self.assertEqual(deleted.status_code, 204)
+        self.assertFalse(stored_path.exists())
+
+    def test_delete_trade_removes_linked_app_managed_files(self):
+        trade = self.client.post(
+            "/trades",
+            json={"symbol": "GOOG", "direction": "short"},
+        ).json()
+        before = self.client.put(
+            f"/trades/{trade['id']}/attachments/before_screenshot/file",
+            params={"file_name": "before.png", "content_type": "image/png"},
+            content=b"before managed bytes",
+            headers={"Content-Type": "application/octet-stream"},
+        ).json()
+        after = self.client.put(
+            f"/trades/{trade['id']}/attachments/after_screenshot/file",
+            params={"file_name": "after.png", "content_type": "image/png"},
+            content=b"after managed bytes",
+            headers={"Content-Type": "application/octet-stream"},
+        ).json()
+        before_path = Path(before["file_path"])
+        after_path = Path(after["file_path"])
+        self.assertTrue(before_path.exists())
+        self.assertTrue(after_path.exists())
+
+        deleted = self.client.delete(f"/trades/{trade['id']}")
+        self.assertEqual(deleted.status_code, 204)
+        self.assertFalse(before_path.exists())
+        self.assertFalse(after_path.exists())
+
+    def test_delete_metadata_preserves_external_manual_file_path(self):
+        external_file = Path(self.tmpdir.name) / "manual-screenshot.png"
+        external_file.write_bytes(b"manual file bytes")
+        trade = self.client.post(
+            "/trades",
+            json={
+                "symbol": "NFLX",
+                "direction": "long",
+                "before_screenshot": {
+                    "file_name": "manual-screenshot.png",
+                    "file_path": str(external_file),
+                    "content_type": "image/png",
+                },
+            },
+        ).json()
+
+        deleted_trade = self.client.delete(f"/trades/{trade['id']}")
+        self.assertEqual(deleted_trade.status_code, 204)
+        self.assertTrue(external_file.exists())
+
+        attachment = self.client.post(
+            "/attachments",
+            json={
+                "attachment_type": "after_screenshot",
+                "file_name": "manual-screenshot.png",
+                "file_path": str(external_file),
+                "content_type": "image/png",
+            },
+        ).json()
+        deleted_attachment = self.client.delete(f"/attachments/{attachment['id']}")
+        self.assertEqual(deleted_attachment.status_code, 204)
+        self.assertTrue(external_file.exists())
 
     def test_rejects_unsupported_trade_status_and_missing_relationships(self):
         bad_status = self.client.post(

@@ -245,9 +245,15 @@ def update_trade(trade_id: int, payload: TradePayload, request: Request) -> dict
 @router.delete("/trades/{trade_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_trade(trade_id: int, request: Request) -> None:
     with open_database(request) as connection:
+        linked_attachments = list_trade_attachments(connection, trade_id)
         cursor = connection.execute("DELETE FROM trades WHERE id = ?", (trade_id,))
         if cursor.rowcount == 0:
             raise HTTPException(status_code=404, detail="trade not found")
+        for attachment in linked_attachments:
+            connection.execute("DELETE FROM attachments WHERE id = ?", (attachment["id"],))
+        storage_dir = attachment_storage_dir(request)
+        for attachment in linked_attachments:
+            delete_app_managed_file(storage_dir, attachment.get("file_path"))
 
 
 @router.get("/trades/{trade_id}/attachments")
@@ -417,6 +423,8 @@ def update_attachment(attachment_id: int, payload: AttachmentUpdate, request: Re
 @router.delete("/attachments/{attachment_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_attachment(attachment_id: int, request: Request) -> None:
     with open_database(request) as connection:
-        cursor = connection.execute("DELETE FROM attachments WHERE id = ?", (attachment_id,))
-        if cursor.rowcount == 0:
+        attachment = row_to_dict(connection.execute("SELECT * FROM attachments WHERE id = ?", (attachment_id,)).fetchone())
+        if attachment is None:
             raise HTTPException(status_code=404, detail="attachment not found")
+        connection.execute("DELETE FROM attachments WHERE id = ?", (attachment_id,))
+        delete_app_managed_file(attachment_storage_dir(request), attachment.get("file_path"))
