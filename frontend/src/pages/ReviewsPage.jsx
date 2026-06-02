@@ -35,6 +35,35 @@ function TradeReviewList({ emptyText, onSelectTrade, selectedTradeId, title, tra
   );
 }
 
+
+function ReviewScreenshotSummary({ selectedTrade }) {
+  if (!selectedTrade) {
+    return null;
+  }
+
+  return (
+    <section className="metadata-card">
+      <h3>Screenshot metadata</h3>
+      <div className="screenshot-metadata-list">
+        {[
+          ['Before', selectedTrade.before_screenshot],
+          ['After', selectedTrade.after_screenshot],
+        ].map(([label, attachment]) => (
+          <div key={label}>
+            <strong>{label}</strong>
+            {attachment ? (
+              <p className="muted">
+                {attachment.file_name} · {attachment.content_type || 'unknown type'}
+                {attachment.notes ? ` · ${attachment.notes}` : ''}
+              </p>
+            ) : <p className="muted">No screenshot metadata.</p>}
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 function ReviewForm({ form, isEditing, onChange, onDelete, onSubmit, selectedTrade }) {
   function setField(field, value) {
     onChange({ ...form, [field]: value });
@@ -49,6 +78,8 @@ function ReviewForm({ form, isEditing, onChange, onDelete, onSubmit, selectedTra
         </div>
         {isEditing ? <button className="danger" type="button" onClick={onDelete}>Delete review</button> : null}
       </div>
+
+      <ReviewScreenshotSummary selectedTrade={selectedTrade} />
 
       <div className="form-grid">
         <label>

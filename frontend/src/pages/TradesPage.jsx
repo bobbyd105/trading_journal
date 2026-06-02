@@ -9,8 +9,9 @@ function updateScreenshot(form, slot, field, value) {
   return { ...form, [slot]: hasMetadata ? next : null };
 }
 
-function TradeForm({ editingTradeId, form, onCancelEdit, onFormChange, onSaveTag, onSaveTrade, playbooks, tags }) {
+function TradeForm({ editingTradeId, form, onCancelEdit, onFormChange, onSaveTag, onSaveTrade, onUploadAttachment, playbooks, tags }) {
   const [tagName, setTagName] = useState('');
+  const [selectedFiles, setSelectedFiles] = useState({});
 
   async function handleCreateTag(event) {
     event.preventDefault();
@@ -111,27 +112,49 @@ function TradeForm({ editingTradeId, form, onCancelEdit, onFormChange, onSaveTag
       </label>
 
       <div className="screenshot-grid">
-        {['before_screenshot', 'after_screenshot'].map((slot) => (
-          <fieldset key={slot}>
-            <legend>{slot === 'before_screenshot' ? 'Before screenshot metadata' : 'After screenshot metadata'}</legend>
-            <label>
-              File name
-              <input value={form[slot]?.file_name || ''} onChange={(event) => onFormChange(updateScreenshot(form, slot, 'file_name', event.target.value))} />
-            </label>
-            <label>
-              File path
-              <input value={form[slot]?.file_path || ''} onChange={(event) => onFormChange(updateScreenshot(form, slot, 'file_path', event.target.value))} />
-            </label>
-            <label>
-              Content type
-              <input placeholder="image/png" value={form[slot]?.content_type || ''} onChange={(event) => onFormChange(updateScreenshot(form, slot, 'content_type', event.target.value))} />
-            </label>
-            <label>
-              Notes
-              <input value={form[slot]?.notes || ''} onChange={(event) => onFormChange(updateScreenshot(form, slot, 'notes', event.target.value))} />
-            </label>
-          </fieldset>
-        ))}
+        {['before_screenshot', 'after_screenshot'].map((slot) => {
+          const label = slot === 'before_screenshot' ? 'Before screenshot' : 'After screenshot';
+          const selectedFile = selectedFiles[slot] || null;
+          return (
+            <fieldset key={slot}>
+              <legend>{label}</legend>
+              <p className="muted">Store a local file path or upload into the app-managed attachments folder. The database only saves metadata.</p>
+              <label>
+                Select local image
+                <input
+                  accept="image/*"
+                  disabled={!editingTradeId}
+                  type="file"
+                  onChange={(event) => setSelectedFiles({ ...selectedFiles, [slot]: event.target.files?.[0] || null })}
+                />
+              </label>
+              <button
+                disabled={!editingTradeId || !selectedFile}
+                type="button"
+                onClick={() => onUploadAttachment(slot, selectedFile, form[slot]?.notes || '')}
+              >
+                Upload selected file
+              </button>
+              {!editingTradeId ? <p className="muted">Save the trade before uploading a local file.</p> : null}
+              <label>
+                File name
+                <input value={form[slot]?.file_name || ''} onChange={(event) => onFormChange(updateScreenshot(form, slot, 'file_name', event.target.value))} />
+              </label>
+              <label>
+                File path
+                <input value={form[slot]?.file_path || ''} onChange={(event) => onFormChange(updateScreenshot(form, slot, 'file_path', event.target.value))} />
+              </label>
+              <label>
+                Content type
+                <input placeholder="image/png" value={form[slot]?.content_type || ''} onChange={(event) => onFormChange(updateScreenshot(form, slot, 'content_type', event.target.value))} />
+              </label>
+              <label>
+                Notes
+                <input value={form[slot]?.notes || ''} onChange={(event) => onFormChange(updateScreenshot(form, slot, 'notes', event.target.value))} />
+              </label>
+            </fieldset>
+          );
+        })}
       </div>
 
       <div className="button-row">
@@ -152,6 +175,7 @@ function TradesPage({
   onSaveTag,
   onSaveTrade,
   onSelectTrade,
+  onUploadAttachment,
   playbooks,
   tags,
   trades,
@@ -168,6 +192,7 @@ function TradesPage({
         onFormChange={onFormChange}
         onSaveTag={onSaveTag}
         onSaveTrade={onSaveTrade}
+        onUploadAttachment={onUploadAttachment}
         playbooks={playbooks}
         tags={tags}
       />
