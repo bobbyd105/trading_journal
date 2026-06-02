@@ -154,6 +154,12 @@ function App() {
     await refreshData();
   }
 
+  async function handleCreateTag(tag) {
+    await apiRequest('/tags', { method: 'POST', body: JSON.stringify(tag) });
+    setMessage('Tag created');
+    await refreshData();
+  }
+
   return (
     <div className="app-shell">
       <aside className="sidebar" aria-label="Primary navigation">
@@ -179,6 +185,7 @@ function App() {
           onDeleteTrade={handleDeleteTrade}
           onEditTrade={handleEditTrade}
           onFormChange={setTradeForm}
+          onSaveTag={handleCreateTag}
           onSaveTrade={handleSaveTrade}
           onSelectTrade={setSelectedTradeId}
           playbooks={playbooks}

@@ -1,3 +1,5 @@
+import { useState } from 'react';
+
 const statuses = ['draft', 'closed', 'reviewed', 'archived'];
 
 function updateScreenshot(form, slot, field, value) {
@@ -7,7 +9,19 @@ function updateScreenshot(form, slot, field, value) {
   return { ...form, [slot]: hasMetadata ? next : null };
 }
 
-function TradeForm({ editingTradeId, form, onCancelEdit, onFormChange, onSaveTrade, playbooks, tags }) {
+function TradeForm({ editingTradeId, form, onCancelEdit, onFormChange, onSaveTag, onSaveTrade, playbooks, tags }) {
+  const [tagName, setTagName] = useState('');
+
+  async function handleCreateTag(event) {
+    event.preventDefault();
+    const name = tagName.trim();
+    if (!name) {
+      return;
+    }
+    await onSaveTag({ name });
+    setTagName('');
+  }
+
   function setField(field, value) {
     onFormChange({ ...form, [field]: value });
   }
@@ -73,8 +87,15 @@ function TradeForm({ editingTradeId, form, onCancelEdit, onFormChange, onSaveTra
 
       <fieldset>
         <legend>Tags</legend>
+        <div className="inline-form">
+          <label>
+            New tag
+            <input value={tagName} onChange={(event) => setTagName(event.target.value)} />
+          </label>
+          <button type="button" onClick={handleCreateTag}>Create tag</button>
+        </div>
         <div className="pill-row">
-          {tags.length === 0 ? <span className="muted">Create tags through the API, then select them here.</span> : null}
+          {tags.length === 0 ? <span className="muted">No tags created yet.</span> : null}
           {tags.map((tag) => (
             <label key={tag.id} className="check-pill">
               <input checked={form.tags.includes(tag.id)} type="checkbox" onChange={() => toggleTag(tag.id)} />
@@ -128,6 +149,7 @@ function TradesPage({
   onDeleteTrade,
   onEditTrade,
   onFormChange,
+  onSaveTag,
   onSaveTrade,
   onSelectTrade,
   playbooks,
@@ -144,6 +166,7 @@ function TradesPage({
         form={form}
         onCancelEdit={onCancelEdit}
         onFormChange={onFormChange}
+        onSaveTag={onSaveTag}
         onSaveTrade={onSaveTrade}
         playbooks={playbooks}
         tags={tags}

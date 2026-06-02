@@ -171,11 +171,20 @@ button.danger {
 }
 
 .button-row,
+.inline-form,
 .pill-row {
   align-items: center;
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
+}
+
+.inline-form {
+  margin-bottom: 0.75rem;
+}
+
+.inline-form label {
+  min-width: 220px;
 }
 
 .check-pill {
