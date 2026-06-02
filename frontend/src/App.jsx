@@ -4,6 +4,7 @@ import { apiRequest } from './api/client.js';
 import { emptyTrade, toTradePayload, tradeToForm } from './domain/trades.js';
 import DashboardPage from './pages/DashboardPage.jsx';
 import PlaybooksPage from './pages/PlaybooksPage.jsx';
+import ReviewsPage from './pages/ReviewsPage.jsx';
 import SettingsPage from './pages/SettingsPage.jsx';
 import TradeDetailPage from './pages/TradeDetailPage.jsx';
 import TradesPage from './pages/TradesPage.jsx';
@@ -13,6 +14,7 @@ const navigationItems = [
   'Trades',
   'Trade Detail',
   'Playbooks',
+  'Reviews',
   'Settings',
 ];
 
@@ -122,6 +124,7 @@ function App() {
         />
         <TradeDetailPage onEditTrade={handleEditTrade} trade={selectedTrade} />
         <PlaybooksPage onSavePlaybook={handleSavePlaybook} playbooks={playbooks} />
+        <ReviewsPage onDataChanged={refreshData} onMessage={setMessage} />
         <SettingsPage />
       </main>
     </div>

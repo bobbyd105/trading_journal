@@ -1,236 +1,43 @@
-"""Phase 2 V1-Lite CRUD endpoints for local trade logging."""
+"""CRUD endpoints for local trade logging and Phase 3 reviews."""
 
 from __future__ import annotations
 
 import sqlite3
-from typing import Any, Literal
+from typing import Any
 
 from fastapi import APIRouter, HTTPException, Request, status
-from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from app.api.schemas import (
+    AttachmentCreate,
+    AttachmentUpdate,
+    PlaybookPayload,
+    ReviewPayload,
+    TagPayload,
+    TradePayload,
+)
 from app.db.session import open_database
+from app.repositories.attachments import upsert_trade_attachment
+from app.repositories.common import row_to_dict
+from app.repositories.playbooks import ensure_playbook_exists
+from app.repositories.reviews import (
+    create_review as create_trade_review,
+    delete_review as delete_trade_review,
+    fetch_review,
+    fetch_review_for_trade,
+    list_reviewed_trades,
+    list_trades_needing_review,
+    update_review as update_trade_review,
+)
+from app.repositories.tags import ensure_tags_exist, sync_trade_tags
+from app.repositories.trades import hydrate_trade
 
 router = APIRouter()
-
-TradeStatus = Literal["draft", "closed", "reviewed", "archived"]
-Direction = Literal["long", "short"]
-AttachmentType = Literal["before_screenshot", "after_screenshot"]
-
-
-def row_to_dict(row: sqlite3.Row | None) -> dict[str, Any] | None:
-    return dict(row) if row is not None else None
-
-
-class AttachmentPayload(BaseModel):
-    """Metadata-only screenshot attachment payload."""
-
-    model_config = ConfigDict(extra="forbid")
-
-    id: int | None = None
-    attachment_type: AttachmentType | None = None
-    file_name: str = Field(..., min_length=1)
-    file_path: str | None = None
-    content_type: str | None = None
-    notes: str | None = None
-
-
-class AttachmentCreate(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-    trade_id: int | None = None
-    attachment_type: AttachmentType
-    file_name: str = Field(..., min_length=1)
-    file_path: str | None = None
-    content_type: str | None = None
-    notes: str | None = None
-
-
-class AttachmentUpdate(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-    trade_id: int | None = None
-    attachment_type: AttachmentType | None = None
-    file_name: str | None = Field(default=None, min_length=1)
-    file_path: str | None = None
-    content_type: str | None = None
-    notes: str | None = None
-
-
-class PlaybookPayload(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-    name: str = Field(..., min_length=1)
-    description: str | None = None
-    is_active: bool = True
-
-
-class TagPayload(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-    name: str = Field(..., min_length=1)
-
-
-class TradePayload(BaseModel):
-    """User-entered trade fields; symbol is preserved exactly as submitted."""
-
-    model_config = ConfigDict(extra="forbid")
-
-    symbol: str = Field(..., min_length=1)
-    direction: Direction
-    entry_price: float | None = None
-    exit_price: float | None = None
-    quantity: float | None = None
-    pnl: float | None = None
-    risk: float | None = None
-    playbook_id: int | None = None
-    status: TradeStatus = "draft"
-    tags: list[int] = Field(default_factory=list)
-    notes: str | None = None
-    before_screenshot: AttachmentPayload | None = None
-    after_screenshot: AttachmentPayload | None = None
-
-    @field_validator("tags")
-    @classmethod
-    def dedupe_tags(cls, value: list[int]) -> list[int]:
-        return list(dict.fromkeys(value))
-
-
-def ensure_playbook_exists(connection: sqlite3.Connection, playbook_id: int | None) -> None:
-    if playbook_id is None:
-        return
-    row = connection.execute("SELECT id FROM playbooks WHERE id = ?", (playbook_id,)).fetchone()
-    if row is None:
-        raise HTTPException(status_code=400, detail="playbook_id does not exist")
-
-
-def ensure_tags_exist(connection: sqlite3.Connection, tag_ids: list[int]) -> None:
-    if not tag_ids:
-        return
-    placeholders = ",".join("?" for _ in tag_ids)
-    rows = connection.execute(
-        f"SELECT id FROM tags WHERE id IN ({placeholders})", tag_ids
-    ).fetchall()
-    found = {row["id"] for row in rows}
-    missing = sorted(set(tag_ids) - found)
-    if missing:
-        raise HTTPException(status_code=400, detail=f"tag ids do not exist: {missing}")
-
-
-def validate_attachment_type(payload: AttachmentPayload, expected_type: AttachmentType) -> None:
-    if payload.attachment_type is not None and payload.attachment_type != expected_type:
-        raise HTTPException(
-            status_code=400,
-            detail=f"{expected_type} field cannot contain {payload.attachment_type}",
-        )
-
-
-def upsert_trade_attachment(
-    connection: sqlite3.Connection,
-    trade_id: int,
-    expected_type: AttachmentType,
-    payload: AttachmentPayload | None,
-) -> None:
-    """Replace one screenshot slot with metadata only; no binary upload is handled."""
-    existing = connection.execute(
-        """
-        SELECT attachments.id
-        FROM attachments
-        JOIN trade_attachments ON trade_attachments.attachment_id = attachments.id
-        WHERE trade_attachments.trade_id = ? AND attachments.attachment_type = ?
-        """,
-        (trade_id, expected_type),
-    ).fetchone()
-
-    if payload is None:
-        if existing is not None:
-            connection.execute("DELETE FROM attachments WHERE id = ?", (existing["id"],))
-        return
-
-    validate_attachment_type(payload, expected_type)
-    if existing is None:
-        cursor = connection.execute(
-            """
-            INSERT INTO attachments (attachment_type, file_name, file_path, content_type, notes)
-            VALUES (?, ?, ?, ?, ?)
-            """,
-            (expected_type, payload.file_name, payload.file_path, payload.content_type, payload.notes),
-        )
-        connection.execute(
-            "INSERT INTO trade_attachments (trade_id, attachment_id) VALUES (?, ?)",
-            (trade_id, cursor.lastrowid),
-        )
-        return
-
-    connection.execute(
-        """
-        UPDATE attachments
-        SET file_name = ?, file_path = ?, content_type = ?, notes = ?
-        WHERE id = ?
-        """,
-        (payload.file_name, payload.file_path, payload.content_type, payload.notes, existing["id"]),
-    )
-
-
-def sync_trade_tags(connection: sqlite3.Connection, trade_id: int, tag_ids: list[int]) -> None:
-    connection.execute("DELETE FROM trade_tags WHERE trade_id = ?", (trade_id,))
-    connection.executemany(
-        "INSERT INTO trade_tags (trade_id, tag_id) VALUES (?, ?)",
-        [(trade_id, tag_id) for tag_id in tag_ids],
-    )
-
-
-def hydrate_trade(connection: sqlite3.Connection, trade_id: int) -> dict[str, Any]:
-    trade = row_to_dict(
-        connection.execute(
-            """
-            SELECT trades.*, playbooks.name AS playbook_name
-            FROM trades
-            LEFT JOIN playbooks ON playbooks.id = trades.playbook_id
-            WHERE trades.id = ?
-            """,
-            (trade_id,),
-        ).fetchone()
-    )
-    if trade is None:
-        raise HTTPException(status_code=404, detail="trade not found")
-
-    tag_rows = connection.execute(
-        """
-        SELECT tags.id, tags.name
-        FROM tags
-        JOIN trade_tags ON trade_tags.tag_id = tags.id
-        WHERE trade_tags.trade_id = ?
-        ORDER BY tags.name
-        """,
-        (trade_id,),
-    ).fetchall()
-    trade["tags"] = [dict(row) for row in tag_rows]
-
-    attachments = connection.execute(
-        """
-        SELECT attachments.*
-        FROM attachments
-        JOIN trade_attachments ON trade_attachments.attachment_id = attachments.id
-        WHERE trade_attachments.trade_id = ?
-        ORDER BY attachments.id
-        """,
-        (trade_id,),
-    ).fetchall()
-    trade["before_screenshot"] = None
-    trade["after_screenshot"] = None
-    for row in attachments:
-        attachment = dict(row)
-        trade[attachment["attachment_type"]] = attachment
-
-    return trade
 
 
 @router.get("/playbooks")
 def list_playbooks(request: Request) -> list[dict[str, Any]]:
     with open_database(request) as connection:
-        rows = connection.execute(
-            "SELECT * FROM playbooks ORDER BY name"
-        ).fetchall()
+        rows = connection.execute("SELECT * FROM playbooks ORDER BY name").fetchall()
         return [dict(row) for row in rows]
 
 
@@ -372,6 +179,18 @@ def create_trade(payload: TradePayload, request: Request) -> dict[str, Any]:
         return hydrate_trade(connection, trade_id)
 
 
+@router.get("/trades/reviews/needs-review")
+def get_trades_needing_review(request: Request) -> list[dict[str, Any]]:
+    with open_database(request) as connection:
+        return list_trades_needing_review(connection)
+
+
+@router.get("/trades/reviews/reviewed")
+def get_reviewed_trades(request: Request) -> list[dict[str, Any]]:
+    with open_database(request) as connection:
+        return list_reviewed_trades(connection)
+
+
 @router.get("/trades/{trade_id}")
 def get_trade(trade_id: int, request: Request) -> dict[str, Any]:
     with open_database(request) as connection:
@@ -418,6 +237,37 @@ def delete_trade(trade_id: int, request: Request) -> None:
         cursor = connection.execute("DELETE FROM trades WHERE id = ?", (trade_id,))
         if cursor.rowcount == 0:
             raise HTTPException(status_code=404, detail="trade not found")
+
+
+@router.get("/trades/{trade_id}/review")
+def get_review_for_trade(trade_id: int, request: Request) -> dict[str, Any]:
+    with open_database(request) as connection:
+        hydrate_trade(connection, trade_id)
+        return fetch_review_for_trade(connection, trade_id)
+
+
+@router.post("/trades/{trade_id}/review", status_code=status.HTTP_201_CREATED)
+def create_review(trade_id: int, payload: ReviewPayload, request: Request) -> dict[str, Any]:
+    with open_database(request) as connection:
+        return create_trade_review(connection, trade_id, payload)
+
+
+@router.get("/reviews/{review_id}")
+def get_review(review_id: int, request: Request) -> dict[str, Any]:
+    with open_database(request) as connection:
+        return fetch_review(connection, review_id)
+
+
+@router.put("/reviews/{review_id}")
+def update_review(review_id: int, payload: ReviewPayload, request: Request) -> dict[str, Any]:
+    with open_database(request) as connection:
+        return update_trade_review(connection, review_id, payload)
+
+
+@router.delete("/reviews/{review_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_review(review_id: int, request: Request) -> None:
+    with open_database(request) as connection:
+        delete_trade_review(connection, review_id)
 
 
 @router.get("/attachments")

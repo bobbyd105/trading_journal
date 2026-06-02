@@ -87,9 +87,19 @@ CREATE TABLE IF NOT EXISTS psychology_entries (
 CREATE TABLE IF NOT EXISTS trade_reviews (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     trade_id INTEGER NOT NULL UNIQUE REFERENCES trades(id) ON DELETE CASCADE,
+    review_status TEXT NOT NULL DEFAULT 'not_started'
+        CHECK (review_status IN ('not_started', 'in_progress', 'complete')),
     summary TEXT,
+    setup_quality_score INTEGER CHECK (setup_quality_score BETWEEN 1 AND 5),
+    entry_quality_score INTEGER CHECK (entry_quality_score BETWEEN 1 AND 5),
+    exit_quality_score INTEGER CHECK (exit_quality_score BETWEEN 1 AND 5),
+    risk_management_score INTEGER CHECK (risk_management_score BETWEEN 1 AND 5),
+    discipline_score INTEGER CHECK (discipline_score BETWEEN 1 AND 5),
+    followed_playbook TEXT NOT NULL DEFAULT 'not_applicable'
+        CHECK (followed_playbook IN ('yes', 'partial', 'no', 'not_applicable')),
     what_went_well TEXT,
     what_to_improve TEXT,
+    lesson_learned TEXT,
     reviewed_at TEXT,
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
