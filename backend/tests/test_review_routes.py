@@ -123,6 +123,41 @@ class ReviewRoutesTest(unittest.TestCase):
         self.assertEqual([trade["id"] for trade in reviewed], [reviewed_trade["id"]])
         self.assertEqual(reviewed[0]["review"]["id"], review.json()["id"])
 
+    def test_changing_completed_review_to_in_progress_returns_trade_to_closed(self):
+        trade = self.create_trade()
+        review = self.client.post(
+            f"/trades/{trade['id']}/review",
+            json=self.review_payload(review_status="complete"),
+        ).json()
+        self.assertEqual(self.client.get(f"/trades/{trade['id']}").json()["status"], "reviewed")
+
+        updated = self.client.put(
+            f"/reviews/{review['id']}",
+            json=self.review_payload(review_status="in_progress"),
+        )
+        self.assertEqual(updated.status_code, 200)
+        self.assertEqual(updated.json()["review_status"], "in_progress")
+
+        refreshed_trade = self.client.get(f"/trades/{trade['id']}")
+        self.assertEqual(refreshed_trade.status_code, 200)
+        self.assertEqual(refreshed_trade.json()["status"], "closed")
+
+    def test_delete_completed_review_returns_trade_to_closed_without_deleting_trade(self):
+        trade = self.create_trade()
+        review = self.client.post(
+            f"/trades/{trade['id']}/review",
+            json=self.review_payload(review_status="complete"),
+        ).json()
+        self.assertEqual(self.client.get(f"/trades/{trade['id']}").json()["status"], "reviewed")
+
+        deleted = self.client.delete(f"/reviews/{review['id']}")
+        self.assertEqual(deleted.status_code, 204)
+
+        existing_trade = self.client.get(f"/trades/{trade['id']}")
+        self.assertEqual(existing_trade.status_code, 200)
+        self.assertEqual(existing_trade.json()["id"], trade["id"])
+        self.assertEqual(existing_trade.json()["status"], "closed")
+
     def test_delete_review_does_not_delete_trade(self):
         trade = self.create_trade()
         review = self.client.post(f"/trades/{trade['id']}/review", json=self.review_payload()).json()

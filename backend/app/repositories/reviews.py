@@ -95,13 +95,15 @@ def update_review(connection: sqlite3.Connection, review_id: int, payload: Revie
     )
     if payload.review_status == "complete":
         mark_trade_reviewed(connection, current["trade_id"])
+    elif current["review_status"] == "complete":
+        mark_trade_closed_if_reviewed(connection, current["trade_id"])
     return fetch_review(connection, review_id)
 
 
 def delete_review(connection: sqlite3.Connection, review_id: int) -> None:
-    cursor = connection.execute("DELETE FROM trade_reviews WHERE id = ?", (review_id,))
-    if cursor.rowcount == 0:
-        raise HTTPException(status_code=404, detail="review not found")
+    current = fetch_review(connection, review_id)
+    connection.execute("DELETE FROM trade_reviews WHERE id = ?", (review_id,))
+    mark_trade_closed_if_reviewed(connection, current["trade_id"])
 
 
 def mark_trade_reviewed(connection: sqlite3.Connection, trade_id: int) -> None:
@@ -110,6 +112,17 @@ def mark_trade_reviewed(connection: sqlite3.Connection, trade_id: int) -> None:
         UPDATE trades
         SET status = 'reviewed', updated_at = CURRENT_TIMESTAMP
         WHERE id = ?
+        """,
+        (trade_id,),
+    )
+
+
+def mark_trade_closed_if_reviewed(connection: sqlite3.Connection, trade_id: int) -> None:
+    connection.execute(
+        """
+        UPDATE trades
+        SET status = 'closed', updated_at = CURRENT_TIMESTAMP
+        WHERE id = ? AND status = 'reviewed'
         """,
         (trade_id,),
     )
