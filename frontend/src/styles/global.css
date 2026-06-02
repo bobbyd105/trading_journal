@@ -99,3 +99,163 @@ nav a:hover {
 .metric-card strong {
   font-size: 1.75rem;
 }
+
+.notice {
+  background: #ecfeff;
+  border: 1px solid #67e8f9;
+  border-radius: 0.75rem;
+  color: #155e75;
+  margin: 0;
+  padding: 0.75rem 1rem;
+}
+
+.crud-form {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.75rem;
+  display: grid;
+  gap: 1rem;
+  margin: 1rem 0;
+  padding: 1rem;
+}
+
+.form-grid,
+.screenshot-grid,
+.detail-layout {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+label,
+fieldset {
+  display: grid;
+  gap: 0.35rem;
+}
+
+fieldset {
+  border: 1px solid #cbd5e1;
+  border-radius: 0.75rem;
+  padding: 1rem;
+}
+
+input,
+select,
+textarea {
+  border: 1px solid #cbd5e1;
+  border-radius: 0.55rem;
+  font: inherit;
+  padding: 0.65rem 0.75rem;
+}
+
+textarea {
+  min-height: 96px;
+}
+
+button {
+  background: #2563eb;
+  border: 0;
+  border-radius: 0.55rem;
+  color: #ffffff;
+  cursor: pointer;
+  font-weight: 700;
+  padding: 0.65rem 0.85rem;
+}
+
+button[type="button"] {
+  background: #475569;
+}
+
+button.danger {
+  background: #dc2626;
+}
+
+.button-row,
+.inline-form,
+.pill-row {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.inline-form {
+  margin-bottom: 0.75rem;
+}
+
+.inline-form label {
+  min-width: 220px;
+}
+
+.check-pill {
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 999px;
+  display: flex;
+  gap: 0.35rem;
+  padding: 0.35rem 0.65rem;
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+th,
+td {
+  border-bottom: 1px solid #e2e8f0;
+  padding: 0.75rem;
+  text-align: left;
+}
+
+th {
+  color: #475569;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+}
+
+.card-list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.list-card,
+.metadata-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.75rem;
+  padding: 1rem;
+}
+
+.list-card,
+.detail-header {
+  align-items: flex-start;
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+}
+
+.detail-grid,
+.metadata-card dl {
+  display: grid;
+  gap: 0.5rem 1rem;
+  grid-template-columns: max-content 1fr;
+}
+
+dt {
+  color: #64748b;
+  font-weight: 700;
+}
+
+dd {
+  margin: 0;
+}
+
+.muted {
+  color: #64748b;
+}

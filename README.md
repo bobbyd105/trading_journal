@@ -71,10 +71,10 @@ python -m venv .venv
 source .venv/bin/activate
 pip install -e .
 python -m app.db.init_db
-uvicorn app.main:app --reload
+uvicorn app.main:app --reload --port 8000
 ```
 
-The SQLite database initializes at `data/trading_journal.db` by default.
+The backend API runs at `http://localhost:8000`. The SQLite database initializes at `data/trading_journal.db` by default.
 
 ## Frontend Setup
 
@@ -86,7 +86,9 @@ npm install
 npm run dev
 ```
 
-The Phase 1 frontend is a React + Vite shell with placeholder pages for Dashboard, Trades, Trade Detail, Playbooks, and Settings.
+The frontend runs on Vite's local development server and proxies API calls for `/trades`, `/playbooks`, `/tags`, `/attachments`, and `/health` to `http://localhost:8000`, so start the backend before using the CRUD UI.
+
+The frontend is a React + Vite shell with pages for Dashboard, Trades, Trade Detail, Playbooks, and Settings.
 
 ## Phase 2 Implementation Plan
 
