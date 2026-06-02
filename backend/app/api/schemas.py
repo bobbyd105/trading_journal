@@ -87,6 +87,19 @@ class TradePayload(BaseModel):
         return list(dict.fromkeys(value))
 
 
+class PsychologyPayload(BaseModel):
+    """Trade-level psychology fields for Psychology V1."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    confidence_score: int = Field(..., ge=1, le=5)
+    fear_score: int = Field(..., ge=1, le=5)
+    fomo_score: int = Field(..., ge=1, le=5)
+    discipline_score: int = Field(..., ge=1, le=5)
+    clarity_score: int = Field(..., ge=1, le=5)
+    notes: str | None = None
+
+
 class ReviewPayload(BaseModel):
     """Trade review fields for the Phase 3 MVP."""
 

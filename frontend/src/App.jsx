@@ -4,6 +4,7 @@ import { apiRequest, uploadAttachmentFile } from './api/client.js';
 import { emptyTrade, toTradePayload, tradeToForm } from './domain/trades.js';
 import DashboardPage from './pages/DashboardPage.jsx';
 import PlaybooksPage from './pages/PlaybooksPage.jsx';
+import PsychologyPage from './pages/PsychologyPage.jsx';
 import ReviewsPage from './pages/ReviewsPage.jsx';
 import SettingsPage from './pages/SettingsPage.jsx';
 import TradeDetailPage from './pages/TradeDetailPage.jsx';
@@ -14,6 +15,7 @@ const navigationItems = [
   'Trades',
   'Trade Detail',
   'Playbooks',
+  'Psychology',
   'Reviews',
   'Settings',
 ];
@@ -136,6 +138,7 @@ function App() {
         />
         <TradeDetailPage onEditTrade={handleEditTrade} trade={selectedTrade} />
         <PlaybooksPage onSavePlaybook={handleSavePlaybook} playbooks={playbooks} />
+        <PsychologyPage onDataChanged={refreshData} onMessage={setMessage} trades={trades} />
         <ReviewsPage onDataChanged={refreshData} onMessage={setMessage} />
         <SettingsPage />
       </main>

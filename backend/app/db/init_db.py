@@ -18,6 +18,14 @@ REVIEW_COLUMN_MIGRATIONS = {
     "lesson_learned": "TEXT",
 }
 
+PSYCHOLOGY_COLUMN_MIGRATIONS = {
+    "confidence_score": "INTEGER CHECK (confidence_score BETWEEN 1 AND 5)",
+    "fear_score": "INTEGER CHECK (fear_score BETWEEN 1 AND 5)",
+    "fomo_score": "INTEGER CHECK (fomo_score BETWEEN 1 AND 5)",
+    "clarity_score": "INTEGER CHECK (clarity_score BETWEEN 1 AND 5)",
+    "updated_at": "TEXT",
+}
+
 
 def migrate_review_columns(connection) -> None:
     """Add Phase 3 review columns to existing local databases."""
@@ -32,12 +40,29 @@ def migrate_review_columns(connection) -> None:
             )
 
 
+def migrate_psychology_columns(connection) -> None:
+    """Add Psychology V1 columns to existing local databases."""
+    existing_columns = {
+        row[1]
+        for row in connection.execute("PRAGMA table_info(psychology_entries)").fetchall()
+    }
+    for column_name, column_definition in PSYCHOLOGY_COLUMN_MIGRATIONS.items():
+        if column_name not in existing_columns:
+            connection.execute(
+                f"ALTER TABLE psychology_entries ADD COLUMN {column_name} {column_definition}"
+            )
+    connection.execute(
+        "CREATE UNIQUE INDEX IF NOT EXISTS idx_psychology_entries_trade_id ON psychology_entries(trade_id)"
+    )
+
+
 def initialize_database(database_path: Path = DEFAULT_DATABASE_PATH) -> Path:
     """Apply the schema and return the initialized database path."""
     schema = SCHEMA_PATH.read_text(encoding="utf-8")
     with get_connection(database_path) as connection:
         connection.executescript(schema)
         migrate_review_columns(connection)
+        migrate_psychology_columns(connection)
     return database_path
 
 
