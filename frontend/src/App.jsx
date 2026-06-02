@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 
-import { apiRequest } from './api/client.js';
+import { apiRequest, uploadAttachmentFile } from './api/client.js';
 import { emptyTrade, toTradePayload, tradeToForm } from './domain/trades.js';
 import DashboardPage from './pages/DashboardPage.jsx';
 import PlaybooksPage from './pages/PlaybooksPage.jsx';
@@ -63,6 +63,17 @@ function App() {
     await refreshData();
   }
 
+
+  async function handleUploadAttachment(slot, file, notes) {
+    if (!editingTradeId || !file) {
+      return;
+    }
+    const attachment = await uploadAttachmentFile(editingTradeId, slot, file, notes);
+    setTradeForm((current) => ({ ...current, [slot]: attachment }));
+    setMessage(`Uploaded ${file.name}`);
+    await refreshData();
+  }
+
   function handleEditTrade(trade) {
     setEditingTradeId(trade.id);
     setTradeForm(tradeToForm(trade));
@@ -117,6 +128,7 @@ function App() {
           onFormChange={setTradeForm}
           onSaveTag={handleCreateTag}
           onSaveTrade={handleSaveTrade}
+          onUploadAttachment={handleUploadAttachment}
           onSelectTrade={setSelectedTradeId}
           playbooks={playbooks}
           tags={tags}

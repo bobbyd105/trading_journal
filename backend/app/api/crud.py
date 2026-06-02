@@ -3,12 +3,15 @@
 from __future__ import annotations
 
 import sqlite3
+from pathlib import Path
 from typing import Any
 
-from fastapi import APIRouter, HTTPException, Request, status
+from fastapi import APIRouter, Body, HTTPException, Query, Request, status
+from fastapi.responses import FileResponse
 
 from app.api.schemas import (
     AttachmentCreate,
+    AttachmentPayload,
     AttachmentUpdate,
     PlaybookPayload,
     ReviewPayload,
@@ -16,7 +19,15 @@ from app.api.schemas import (
     TradePayload,
 )
 from app.db.session import open_database
-from app.repositories.attachments import upsert_trade_attachment
+from app.repositories.attachments import (
+    attachment_storage_dir,
+    delete_app_managed_file,
+    get_trade_attachment_by_type,
+    is_app_managed_attachment_path,
+    list_trade_attachments,
+    store_attachment_file,
+    upsert_trade_attachment,
+)
 from app.repositories.common import row_to_dict
 from app.repositories.playbooks import ensure_playbook_exists
 from app.repositories.reviews import (
@@ -239,6 +250,43 @@ def delete_trade(trade_id: int, request: Request) -> None:
             raise HTTPException(status_code=404, detail="trade not found")
 
 
+@router.get("/trades/{trade_id}/attachments")
+def get_trade_attachments(trade_id: int, request: Request) -> list[dict[str, Any]]:
+    with open_database(request) as connection:
+        hydrate_trade(connection, trade_id)
+        return list_trade_attachments(connection, trade_id)
+
+
+@router.put("/trades/{trade_id}/attachments/{attachment_type}/file")
+def upload_trade_attachment_file(
+    trade_id: int,
+    attachment_type: str,
+    request: Request,
+    file_name: str = Query(..., min_length=1),
+    content_type: str | None = Query(default=None),
+    notes: str | None = Query(default=None),
+    content: bytes = Body(..., media_type="application/octet-stream"),
+) -> dict[str, Any]:
+    if attachment_type not in {"before_screenshot", "after_screenshot"}:
+        raise HTTPException(status_code=422, detail="unsupported attachment type")
+
+    with open_database(request) as connection:
+        hydrate_trade(connection, trade_id)
+        storage_dir = attachment_storage_dir(request)
+        existing = get_trade_attachment_by_type(connection, trade_id, attachment_type)
+        stored_path = store_attachment_file(storage_dir, file_name, content)
+        payload = AttachmentPayload(
+            attachment_type=attachment_type,
+            file_name=file_name,
+            file_path=str(stored_path),
+            content_type=content_type,
+            notes=notes,
+        )
+        attachment_id = upsert_trade_attachment(connection, trade_id, attachment_type, payload)
+        delete_app_managed_file(storage_dir, existing["file_path"] if existing else None)
+        return row_to_dict(connection.execute("SELECT * FROM attachments WHERE id = ?", (attachment_id,)).fetchone())
+
+
 @router.get("/trades/{trade_id}/review")
 def get_review_for_trade(trade_id: int, request: Request) -> dict[str, Any]:
     with open_database(request) as connection:
@@ -282,6 +330,27 @@ def list_attachments(request: Request) -> list[dict[str, Any]]:
             """
         ).fetchall()
         return [dict(row) for row in rows]
+
+
+@router.get("/attachments/{attachment_id}/file")
+def get_attachment_file(attachment_id: int, request: Request) -> FileResponse:
+    with open_database(request) as connection:
+        attachment = row_to_dict(connection.execute("SELECT * FROM attachments WHERE id = ?", (attachment_id,)).fetchone())
+        if attachment is None:
+            raise HTTPException(status_code=404, detail="attachment not found")
+        storage_dir = attachment_storage_dir(request)
+        attachment_path = attachment.get("file_path")
+        if (
+            not attachment_path
+            or not is_app_managed_attachment_path(storage_dir, attachment_path)
+            or not Path(attachment_path).exists()
+        ):
+            raise HTTPException(status_code=404, detail="attachment file not found")
+        return FileResponse(
+            attachment["file_path"],
+            media_type=attachment.get("content_type") or "application/octet-stream",
+            filename=attachment.get("file_name") or None,
+        )
 
 
 @router.get("/attachments/{attachment_id}")
