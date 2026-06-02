@@ -49,6 +49,7 @@ trading_journal/
 Phase 1 creates the approved V1-Lite tables:
 
 - `accounts`
+- `instruments`
 - `playbooks`
 - `trades`
 - `tags`
@@ -58,7 +59,7 @@ Phase 1 creates the approved V1-Lite tables:
 - `psychology_entries`
 - `trade_reviews`
 
-Trade statuses are constrained to `draft`, `closed`, `reviewed`, and `archived`. Attachments are metadata-only and constrained to `before_screenshot` and `after_screenshot`.
+Trade statuses are constrained to `draft`, `closed`, `reviewed`, and `archived`. Trades keep the user-entered `symbol` as the authoritative analytics value while optionally linking to `instruments` for stable instrument metadata, avoiding a later symbol-to-instrument refactor. Attachments are metadata-only and constrained to `before_screenshot` and `after_screenshot`.
 
 ## Backend Setup
 
@@ -92,7 +93,7 @@ The Phase 1 frontend is a React + Vite shell with placeholder pages for Dashboar
 Phase 2 will add Trade Logging without moving beyond V1-Lite:
 
 1. Add backend CRUD routes for trades, playbooks, tags, and metadata-only screenshots.
-2. Keep `trades` as the canonical record for analytics inputs.
+2. Keep `trades` as the canonical record for analytics inputs, preserving the submitted symbol even when a trade links to an instrument record.
 3. Implement simple React forms for the approved trade entry fields: symbol, direction, entry price, exit price, quantity, P&L, risk, playbook, tags, and notes.
 4. Add list/detail UI for trades and simple playbook/tag management.
 5. Preserve user-entered values exactly; do not auto-correct or enrich data.

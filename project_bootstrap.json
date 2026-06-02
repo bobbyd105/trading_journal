@@ -34,6 +34,7 @@
   "v1_schema": {
     "tables": [
       "accounts",
+      "instruments",
       "playbooks",
       "trades",
       "tags",
