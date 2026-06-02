@@ -14,6 +14,7 @@ from app.api.schemas import (
     AttachmentPayload,
     AttachmentUpdate,
     PlaybookPayload,
+    PsychologyPayload,
     ReviewPayload,
     TagPayload,
     TradePayload,
@@ -30,6 +31,13 @@ from app.repositories.attachments import (
 )
 from app.repositories.common import row_to_dict
 from app.repositories.playbooks import ensure_playbook_exists
+from app.repositories.psychology import (
+    create_psychology_entry,
+    delete_psychology_entry,
+    fetch_psychology_for_trade,
+    list_psychology_entries,
+    update_psychology_entry,
+)
 from app.repositories.reviews import (
     create_review as create_trade_review,
     delete_review as delete_trade_review,
@@ -190,6 +198,12 @@ def create_trade(payload: TradePayload, request: Request) -> dict[str, Any]:
         return hydrate_trade(connection, trade_id)
 
 
+@router.get("/psychology")
+def list_psychology(request: Request) -> list[dict[str, Any]]:
+    with open_database(request) as connection:
+        return list_psychology_entries(connection)
+
+
 @router.get("/trades/reviews/needs-review")
 def get_trades_needing_review(request: Request) -> list[dict[str, Any]]:
     with open_database(request) as connection:
@@ -240,6 +254,30 @@ def update_trade(trade_id: int, payload: TradePayload, request: Request) -> dict
         upsert_trade_attachment(connection, trade_id, "before_screenshot", payload.before_screenshot)
         upsert_trade_attachment(connection, trade_id, "after_screenshot", payload.after_screenshot)
         return hydrate_trade(connection, trade_id)
+
+
+@router.get("/trades/{trade_id}/psychology")
+def get_trade_psychology(trade_id: int, request: Request) -> dict[str, Any]:
+    with open_database(request) as connection:
+        return fetch_psychology_for_trade(connection, trade_id)
+
+
+@router.post("/trades/{trade_id}/psychology", status_code=status.HTTP_201_CREATED)
+def create_trade_psychology(trade_id: int, payload: PsychologyPayload, request: Request) -> dict[str, Any]:
+    with open_database(request) as connection:
+        return create_psychology_entry(connection, trade_id, payload)
+
+
+@router.put("/trades/{trade_id}/psychology")
+def update_trade_psychology(trade_id: int, payload: PsychologyPayload, request: Request) -> dict[str, Any]:
+    with open_database(request) as connection:
+        return update_psychology_entry(connection, trade_id, payload)
+
+
+@router.delete("/trades/{trade_id}/psychology", status_code=status.HTTP_204_NO_CONTENT)
+def delete_trade_psychology(trade_id: int, request: Request) -> None:
+    with open_database(request) as connection:
+        delete_psychology_entry(connection, trade_id)
 
 
 @router.delete("/trades/{trade_id}", status_code=status.HTTP_204_NO_CONTENT)

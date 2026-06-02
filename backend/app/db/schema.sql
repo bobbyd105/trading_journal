@@ -77,11 +77,15 @@ CREATE TABLE IF NOT EXISTS trade_attachments (
 
 CREATE TABLE IF NOT EXISTS psychology_entries (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    trade_id INTEGER NOT NULL REFERENCES trades(id) ON DELETE CASCADE,
-    discipline_score INTEGER CHECK (discipline_score BETWEEN 1 AND 5),
-    emotion TEXT,
+    trade_id INTEGER NOT NULL UNIQUE REFERENCES trades(id) ON DELETE CASCADE,
+    confidence_score INTEGER NOT NULL CHECK (confidence_score BETWEEN 1 AND 5),
+    fear_score INTEGER NOT NULL CHECK (fear_score BETWEEN 1 AND 5),
+    fomo_score INTEGER NOT NULL CHECK (fomo_score BETWEEN 1 AND 5),
+    discipline_score INTEGER NOT NULL CHECK (discipline_score BETWEEN 1 AND 5),
+    clarity_score INTEGER NOT NULL CHECK (clarity_score BETWEEN 1 AND 5),
     notes TEXT,
-    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS trade_reviews (
@@ -111,3 +115,4 @@ CREATE INDEX IF NOT EXISTS idx_trades_status ON trades(status);
 CREATE INDEX IF NOT EXISTS idx_trades_instrument_id ON trades(instrument_id);
 CREATE INDEX IF NOT EXISTS idx_trades_playbook_id ON trades(playbook_id);
 CREATE INDEX IF NOT EXISTS idx_trades_closed_at ON trades(closed_at);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_psychology_entries_trade_id ON psychology_entries(trade_id);
