@@ -15,6 +15,7 @@ export default defineConfig({
       '/tags': apiProxy,
       '/attachments': apiProxy,
       '/analytics': apiProxy,
+      '/psychology': apiProxy,
       '/health': apiProxy,
     },
   },
