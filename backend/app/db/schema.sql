@@ -18,9 +18,19 @@ CREATE TABLE IF NOT EXISTS playbooks (
     updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE IF NOT EXISTS instruments (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    symbol TEXT NOT NULL UNIQUE,
+    name TEXT,
+    asset_class TEXT,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE TABLE IF NOT EXISTS trades (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     account_id INTEGER REFERENCES accounts(id) ON DELETE SET NULL,
+    instrument_id INTEGER REFERENCES instruments(id) ON DELETE SET NULL,
     playbook_id INTEGER REFERENCES playbooks(id) ON DELETE SET NULL,
     status TEXT NOT NULL DEFAULT 'draft' CHECK (status IN ('draft', 'closed', 'reviewed', 'archived')),
     symbol TEXT NOT NULL,
@@ -85,7 +95,9 @@ CREATE TABLE IF NOT EXISTS trade_reviews (
     updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE INDEX IF NOT EXISTS idx_instruments_symbol ON instruments(symbol);
 CREATE INDEX IF NOT EXISTS idx_trades_symbol ON trades(symbol);
 CREATE INDEX IF NOT EXISTS idx_trades_status ON trades(status);
+CREATE INDEX IF NOT EXISTS idx_trades_instrument_id ON trades(instrument_id);
 CREATE INDEX IF NOT EXISTS idx_trades_playbook_id ON trades(playbook_id);
 CREATE INDEX IF NOT EXISTS idx_trades_closed_at ON trades(closed_at);
