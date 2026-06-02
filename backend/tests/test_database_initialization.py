@@ -60,6 +60,29 @@ class DatabaseInitializationTest(unittest.TestCase):
             ("instruments", "id", "SET NULL"),
         )
 
+    def test_trade_reviews_include_phase_3_fields(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            database_path = Path(tmpdir) / "trading_journal.db"
+            initialize_database(database_path)
+
+            with sqlite3.connect(database_path) as connection:
+                review_columns = {
+                    row[1]: row
+                    for row in connection.execute("PRAGMA table_info(trade_reviews)").fetchall()
+                }
+
+        for column_name in [
+            "review_status",
+            "setup_quality_score",
+            "entry_quality_score",
+            "exit_quality_score",
+            "risk_management_score",
+            "discipline_score",
+            "followed_playbook",
+            "lesson_learned",
+        ]:
+            self.assertIn(column_name, review_columns)
+
 
 if __name__ == "__main__":
     unittest.main()

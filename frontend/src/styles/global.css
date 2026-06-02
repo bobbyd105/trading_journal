@@ -259,3 +259,35 @@ dd {
 .muted {
   color: #64748b;
 }
+
+.compact-list {
+  margin-top: 0.75rem;
+}
+
+.list-button {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  color: #172033;
+  display: grid;
+  gap: 0.25rem;
+  justify-items: start;
+  text-align: left;
+  width: 100%;
+}
+
+.list-button span {
+  color: #64748b;
+  font-weight: 500;
+}
+
+.list-button.active,
+.list-button:hover {
+  background: #eff6ff;
+  border-color: #2563eb;
+  color: #1d4ed8;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
