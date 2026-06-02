@@ -328,3 +328,18 @@ button:disabled {
 .screenshot-metadata-list p {
   margin: 0.25rem 0 0;
 }
+
+.analytics-filters {
+  align-items: end;
+  margin-top: 1rem;
+}
+
+.analytics-group-grid {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.metadata-card h3 {
+  margin: 0 0 0.75rem;
+}

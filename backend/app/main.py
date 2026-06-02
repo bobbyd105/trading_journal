@@ -2,6 +2,7 @@
 
 from fastapi import FastAPI
 
+from app.api.analytics import router as analytics_router
 from app.api.crud import router as crud_router
 from app.api.health import router as health_router
 
@@ -13,3 +14,4 @@ app = FastAPI(
 
 app.include_router(health_router)
 app.include_router(crud_router)
+app.include_router(analytics_router)

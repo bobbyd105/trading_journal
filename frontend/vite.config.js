@@ -14,6 +14,7 @@ export default defineConfig({
       '/playbooks': apiProxy,
       '/tags': apiProxy,
       '/attachments': apiProxy,
+      '/analytics': apiProxy,
       '/health': apiProxy,
     },
   },
