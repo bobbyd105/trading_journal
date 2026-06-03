@@ -63,28 +63,32 @@ Trade statuses are constrained to `draft`, `closed`, `reviewed`, and `archived`.
 
 ## Backend Setup
 
-From the repository root:
+From the repository root in PowerShell:
 
-```bash
+```powershell
 cd backend
 python -m venv .venv
-source .venv/bin/activate
-pip install -e .
+.\.venv\Scripts\Activate.ps1
+python -m pip install -e ".[dev]"
 python -m app.db.init_db
-uvicorn app.main:app --reload --port 8000
+python -m uvicorn app.main:app --reload --port 8000
 ```
 
 The backend API runs at `http://localhost:8000`. The SQLite database initializes at `data/trading_journal.db` by default.
 
+On Windows, run Uvicorn through Python (`python -m uvicorn ...`) so the active virtual environment is used reliably.
+
 ## Frontend Setup
 
-From the repository root:
+From a second PowerShell window at the repository root:
 
-```bash
+```powershell
 cd frontend
 npm install
 npm run dev
 ```
+
+If PowerShell blocks `npm.ps1`, either run the npm commands through `npm.cmd` (`npm.cmd install`, `npm.cmd run dev`) or allow signed scripts for your user with `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`.
 
 The frontend runs on Vite's local development server and proxies API calls for `/trades`, `/playbooks`, `/tags`, `/attachments`, and `/health` to `http://localhost:8000`, so start the backend before using the CRUD UI.
 
